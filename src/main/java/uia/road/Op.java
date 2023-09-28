@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Vector;
 import java.util.stream.Collectors;
 
+import uia.road.events.EquipEvent;
 import uia.road.events.JobEvent;
 import uia.road.events.OpEvent;
 import uia.road.helpers.EquipSelector;
@@ -253,9 +254,19 @@ public class Op<T> {
                     JobEvent.DISPATCHED,
                     job.getQty(),
                     this.id,
-                    null,
+                    eq.getId(),
                     0,
-                    job.getInfo()).deny("DIE", "DIE"));
+                    job.getInfo()).deny(eq.getId(), "ZERO loadable equipmenets"));
+            // equip
+            this.factory.log(new EquipEvent(
+                    eq.getId(),
+                    null,
+                    job.getDispatchedTime(),
+                    EquipEvent.MOVE_IN,
+                    this.id,
+                    job.getProductName(),
+                    job.getQty(),
+                    job.getInfo()));
             // operation
             this.factory.log(new OpEvent(
                     this.id,
@@ -264,8 +275,8 @@ public class Op<T> {
                     job.getProductName(),
                     this.jobs.size(),
                     this.jobs.stream().mapToInt(j -> j.getQty()).sum(),
-                    "DIE",
-                    job.getInfo()).deny("DIE", "DIE"));
+                    eq.getId(),
+                    job.getInfo()).deny(eq.getId(), "ZERO loadable equipmenets"));
         }
         else {
             // job
@@ -322,21 +333,22 @@ public class Op<T> {
                     job.getInfo()));
             return;
         }
-        // dispatched
-        this.factory.log(new JobEvent(
-                job.getId(),
-                job.getProductName(),
-                job.getDispatchedTime(),
-                JobEvent.DISPATCHED,
-                job.getQty(),
-                this.id,
-                null,
-                0,
-                job.getInfo()));
 
         Equip<T> eq = forceToPush ? push(job) : null;
         if (eq == null) {
             this.jobs.add(job);
+            // job
+            this.factory.log(new JobEvent(
+                    job.getId(),
+                    job.getProductName(),
+                    job.getDispatchedTime(),
+                    JobEvent.DISPATCHED,
+                    job.getQty(),
+                    this.id,
+                    null,
+                    0,
+                    job.getInfo()));
+            // operation
             this.factory.log(new OpEvent(
                     this.id,
                     now,
@@ -348,6 +360,28 @@ public class Op<T> {
                     job.getInfo()));
         }
         else if (eq instanceof Equip.Die) {
+            // job
+            this.factory.log(new JobEvent(
+                    job.getId(),
+                    job.getProductName(),
+                    job.getDispatchedTime(),
+                    JobEvent.DISPATCHED,
+                    job.getQty(),
+                    this.id,
+                    eq.getId(),
+                    0,
+                    job.getInfo()).deny(eq.getId(), "ZERO loadable equipments"));
+            // equip
+            this.factory.log(new EquipEvent(
+                    eq.getId(),
+                    null,
+                    job.getDispatchedTime(),
+                    EquipEvent.MOVE_IN,
+                    this.id,
+                    job.getProductName(),
+                    job.getQty(),
+                    job.getInfo()));
+            // operation
             this.factory.log(new OpEvent(
                     this.id,
                     now,
@@ -355,8 +389,11 @@ public class Op<T> {
                     job.getProductName(),
                     this.jobs.size(),
                     this.jobs.stream().mapToInt(j -> j.getQty()).sum(),
-                    null,
-                    job.getInfo()).deny("DIE", "ZERO loadable equipments"));
+                    eq.getId(),
+                    job.getInfo()).deny(eq.getId(), "ZERO loadable equipments"));
+        }
+        else {
+            // job
             this.factory.log(new JobEvent(
                     job.getId(),
                     job.getProductName(),
@@ -366,9 +403,8 @@ public class Op<T> {
                     this.id,
                     null,
                     0,
-                    job.getInfo()).deny("DIE", "ZERO loadable equipments"));
-        }
-        else {
+                    job.getInfo()));
+            // operation
             this.factory.log(new OpEvent(
                     this.id,
                     now,
@@ -456,7 +492,7 @@ public class Op<T> {
         }
     }
 
-    private synchronized Equip<T> push(Job<T> job) {
+    private Equip<T> push(Job<T> job) {
         int now = this.factory.ticksNow();
         int qty = this.jobs.stream().mapToInt(j -> j.getQty()).sum();
         try {

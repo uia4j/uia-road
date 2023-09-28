@@ -358,9 +358,9 @@ public class Factory<T> {
                 op = new Op<T>(job.getOperation(), this);
                 this.operations.put(op.getId(), op);
             }
+            op.enqueueNoDelay(job, false);
         }
         this.products.add(job.getProductName());
-        op.enqueueNoDelay(job, false);
     }
 
     /**
@@ -376,9 +376,9 @@ public class Factory<T> {
                 op = new Op<T>(job.getOperation(), this);
                 this.operations.put(op.getId(), op);
             }
+            op.enqueue(job, true);
         }
         this.products.add(job.getProductName());
-        op.enqueue(job, true);
     }
 
     /**
@@ -394,9 +394,9 @@ public class Factory<T> {
                 op = new Op<T>(job.getOperation(), this);
                 this.operations.put(op.getId(), op);
             }
+            op.enqueueNoDelay(job, true);
         }
         this.products.add(job.getProductName());
-        op.enqueueNoDelay(job, true);
     }
 
     /**

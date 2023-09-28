@@ -367,7 +367,7 @@ public class Job<T> {
         this.predictProcessTime = predictProcessTime;
     }
 
-    public synchronized int processing(int qty) {
+    public int processing(int qty) {
         int r = this.qty - this.processingQty;
         if (qty <= 0 || qty >= r) {
             this.processingQty = this.qty;
@@ -380,7 +380,7 @@ public class Job<T> {
 
     }
 
-    public synchronized void processed(int qty) {
+    public void processed(int qty) {
         this.processedQty = qty <= 0
                 ? this.qty
                 : Math.min(this.processedQty + qty, this.qty);
